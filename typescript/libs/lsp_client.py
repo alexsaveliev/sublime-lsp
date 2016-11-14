@@ -310,7 +310,7 @@ class ServerClient(LspCommClient):
             print(err)
             self.server_proc = None
         # start reader thread
-        if self.server_proc and (not self.server_proc.poll()):
+        if self.server_proc and (self.server_proc.poll() is None):
             log.debug("server process " + str(self.server_proc.pid))
             log.debug("starting reader thread")
             readerThread = threading.Thread(target=ServerClient.__reader, args=(
@@ -331,13 +331,17 @@ class ServerClient(LspCommClient):
         while True:
             if LspCommClient.read_msg(stream, msgq, eventq, asyncReq, reqType, proc, eventHandlers):
                 log.debug("server exited")
+                proc.stderr.close()
                 return
 
     @staticmethod
     def __logger(stream, bar):
         """ Dumps server's stderr to stderr """
-        for line in iter(stream.readline, ""):
-            print(">" + line.decode("utf-8").rstrip(), file=sys.stderr)
+        try:
+            for line in iter(stream.readline, ""):
+                print(">" + line.decode("utf-8").rstrip(), file=sys.stderr)
+        except:
+            pass
 
 class WorkerClient(LspCommClient):
     stop_worker = False
